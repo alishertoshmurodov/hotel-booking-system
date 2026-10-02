@@ -1,0 +1,4 @@
+code;name;descr;criticality
+NEW;New;Booking has been created but not yet confirmed.;2
+CONFIRMED;Confirmed;Booking has been confirmed by the user.;3
+CANCELLED;Cancelled;Booking has been cancelled by the user.;1
