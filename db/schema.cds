@@ -1,5 +1,5 @@
-using { Currency, managed, cuid, sap.common.CodeList } from '@sap/cds/common';
-
+using { Currency, managed, cuid, sap } from '@sap/cds/common';
+namespace hotel.booking;
 
 entity Hotels: cuid, managed {
     name : String;
@@ -37,7 +37,7 @@ entity Bookings: cuid, managed {
     status : Association to BookingStatus;
 }
 
-entity BookingStatus: CodeList {
+entity BookingStatus: sap.common.CodeList {
     key code : String(10);
     criticality : Integer;
 }
