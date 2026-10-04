@@ -31,7 +31,7 @@ entity Bookings: cuid, managed {
     totalAmount : Decimal(10,2);
     currency : Currency;
     guestCurrency : Currency;
-    exchangeRate : Decimal(10,4);
+    exchangeRate : Decimal(15,8);
     totalAmountInGuestCurrency : Decimal(10,2);
     room : Association to Rooms;
     status : Association to BookingStatus;
