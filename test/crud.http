@@ -190,7 +190,7 @@ Authorization: Basic {{admin}}
 ### Create a booking
 # bookingNo, nights, totalAmount, currency and the exchange fields are
 # @readonly: the server computes them. Check the response: nights = 2,
-# totalAmount = 900000.00, bookingNo = BK-2026-0013, status_code = NEW.
+# totalAmount = 900000.00, bookingNo = BK-2026-0016, status_code = NEW.
 # @name createBooking
 POST {{base}}/Bookings
 Authorization: Basic {{admin}}
@@ -584,4 +584,48 @@ Content-Type: application/json
 
 ### admin deletes alice's booking
 DELETE {{base}}/Bookings({{aliceBooking.response.body.ID}})
+Authorization: Basic {{admin}}
+
+
+######################################################################
+# Demo story
+# Registan Plaza is fully booked from 2026-11-20 to 2026-11-23
+# (rooms 11, 12 and 21: BK-2026-0013..0015).
+######################################################################
+
+@registanRoom11 = 20000000-0000-4000-8000-000000000005
+@registanRoom21 = 20000000-0000-4000-8000-000000000007
+
+### alice tries Registan Plaza on 21-22 Nov: expected to FAIL (room already booked)
+# As a customer, she doesn't see the other booking's number.
+POST {{base}}/Bookings
+Authorization: Basic {{alice}}
+Content-Type: application/json
+
+{
+  "IsActiveEntity": true,
+  "guestName": "Alice",
+  "checkInDate": "2026-11-21",
+  "checkOutDate": "2026-11-22",
+  "guestCount": 1,
+  "room_ID": "{{registanRoom11}}"
+}
+
+### alice books room 21 on 28-30 Oct: succeeds, BK-2026-0007 there is cancelled
+# @name cancelledSlot
+POST {{base}}/Bookings
+Authorization: Basic {{alice}}
+Content-Type: application/json
+
+{
+  "IsActiveEntity": true,
+  "guestName": "Alice",
+  "checkInDate": "2026-10-28",
+  "checkOutDate": "2026-10-30",
+  "guestCount": 2,
+  "room_ID": "{{registanRoom21}}"
+}
+
+### admin removes that booking again
+DELETE {{base}}/Bookings({{cancelledSlot.response.body.ID}})
 Authorization: Basic {{admin}}

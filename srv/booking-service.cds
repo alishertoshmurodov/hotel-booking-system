@@ -9,7 +9,9 @@ service BookingService {
     @odata.draft.enabled
     entity Bookings as projection on db.Bookings {
         *,
-        room.hotel.name as hotelName // follows the selected room
+        room.hotel.name as hotelName, // follows the selected room
+        virtual null as hideEdit   : Boolean, // set per user in booking-service.js
+        virtual null as hideDelete : Boolean
     };
     @readonly entity BookingStatus as projection on db.BookingStatus;
 }

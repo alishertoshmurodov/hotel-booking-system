@@ -39,6 +39,11 @@ annotate service.Bookings with {
          };
 }
 
+// Status dropdown shows only the names, not the codes
+annotate service.BookingStatus with {
+    code @title: 'Status' @Common.Text: name @Common.TextArrangement: #TextOnly;
+}
+
 annotate service.Rooms with {
     ID            @title: 'Room' @Common.Text: number @Common.TextArrangement: #TextOnly;
     number        @title: 'Room No.';
@@ -75,6 +80,10 @@ annotate service.Bookings with @(
 
 // Object Page: header and sections
 annotate service.Bookings with @(
+    // Edit and Delete buttons follow the user's role (virtual fields filled after READ)
+    UI.UpdateHidden: hideEdit,
+    UI.DeleteHidden: hideDelete,
+
     UI.HeaderInfo: {
         TypeName      : 'Booking',
         TypeNamePlural: 'Bookings',

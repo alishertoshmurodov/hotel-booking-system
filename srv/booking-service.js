@@ -2,7 +2,7 @@ import cds from '@sap/cds'
 import { getExchangeRate } from './exchange-rates.js'
 
 const DAY = 24 * 60 * 60 * 1000
-const today = () => new Date().toISOString().slice(0, 10)
+const today = () => new Date().toLocaleDateString('en-CA') // YYYY-MM-DD in the server's time zone
 
 export default class BookingService extends cds.ApplicationService {
   init() {
@@ -51,8 +51,11 @@ export default class BookingService extends cds.ApplicationService {
           and checkInDate < ${checkOutDate} and checkOutDate > ${checkInDate}
           and (status_code is null or status_code != 'CANCELLED')
           and ID != ${ID}`
-      if (clash)
-        req.error(400, `Room ${room.number} is already booked from ${clash.checkInDate} to ${clash.checkOutDate} (${clash.bookingNo})`, 'checkInDate')
+      if (clash) {
+        // Customers may not see other customers' bookings, so only staff get the booking number
+        const ref = req.user.is('Customer') ? '' : ` (${clash.bookingNo})`
+        req.error(400, `Room ${room.number} is already booked from ${clash.checkInDate} to ${clash.checkOutDate}${ref}`, 'checkInDate')
+      }
     })
 
 
@@ -88,6 +91,15 @@ export default class BookingService extends cds.ApplicationService {
         req.data.exchangeRate = null
         req.data.totalAmountInGuestCurrency = null
         req.warn(`Total in ${guestCurrency} is not available: ${error.message}`)
+      }
+    })
+
+    // 4. Virtual fields: hide the Edit and Delete buttons for roles that can't use them
+    this.after('READ', Bookings, (result, req) => {
+      for (const booking of [].concat(result ?? [])) {
+        if (typeof booking !== 'object') continue // e.g. a plain $count
+        booking.hideEdit = !req.user.is('Admin') && !req.user.is('Manager')
+        booking.hideDelete = !req.user.is('Admin')
       }
     })
 
