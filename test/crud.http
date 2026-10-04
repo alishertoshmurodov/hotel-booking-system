@@ -191,6 +191,40 @@ DELETE {{base}}/Bookings({{createBooking.response.body.ID}})
 
 
 ######################################################################
+# Expected failures (400): @mandatory and @assert.target
+######################################################################
+
+### Create a booking without required fields: expected to FAIL (ASSERT_MANDATORY)
+POST {{base}}/Bookings
+Content-Type: application/json
+
+{
+  "guestName": "Test Guest"
+}
+
+### Create a booking for a room that doesn't exist: expected to FAIL (ASSERT_TARGET)
+POST {{base}}/Bookings
+Content-Type: application/json
+
+{
+  "guestName": "Test Guest",
+  "checkInDate": "2026-12-01",
+  "checkOutDate": "2026-12-03",
+  "guestCount": 1,
+  "room_ID": "99999999-0000-4000-8000-000000000000",
+  "status_code": "NEW"
+}
+
+### Set a status code that doesn't exist: expected to FAIL (ASSERT_TARGET)
+PATCH {{base}}/Bookings({{bookingId}})
+Content-Type: application/json
+
+{
+  "status_code": "BANANA"
+}
+
+
+######################################################################
 # BookingStatus (read-only)
 ######################################################################
 

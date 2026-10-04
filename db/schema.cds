@@ -22,19 +22,19 @@ entity Rooms: cuid {
 
 entity Bookings: cuid, managed {
     bookingNo : String;
-    guestName : String;
+    @mandatory guestName : String;
     guestEmail : String;
-    checkInDate : Date;
-    checkOutDate : Date;
-    guestCount : Integer;
+    @mandatory checkInDate : Date;
+    @mandatory checkOutDate : Date;
+    @mandatory guestCount : Integer;
     nights : Integer;
     totalAmount : Decimal(10,2);
     currency : Currency;
     guestCurrency : Currency;
     exchangeRate : Decimal(15,8);
     totalAmountInGuestCurrency : Decimal(10,2);
-    room : Association to Rooms;
-    status : Association to BookingStatus;
+    @mandatory room : Association to Rooms @assert.target;
+    status : Association to BookingStatus @assert.target;
 }
 
 entity BookingStatus: sap.common.CodeList {
