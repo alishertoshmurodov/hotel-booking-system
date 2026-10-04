@@ -153,24 +153,20 @@ GET {{base}}/Bookings({{bookingId}})?$expand=room,status
 GET {{base}}/Bookings/$count
 
 ### Create a booking
-# No handlers yet, so nights, totalAmount and bookingNo are sent by hand.
+# bookingNo, nights, totalAmount, currency and the exchange fields are
+# @readonly: the server computes them. Until the Phase 3 handlers exist,
+# they stay empty on new bookings.
 # @name createBooking
 POST {{base}}/Bookings
 Content-Type: application/json
 
 {
-  "bookingNo": "BK-2026-9999",
   "guestName": "Test Guest",
   "guestEmail": "test.guest@example.com",
   "checkInDate": "2026-12-01",
   "checkOutDate": "2026-12-03",
   "guestCount": 1,
-  "nights": 2,
-  "totalAmount": 900000.00,
-  "currency_code": "UZS",
   "guestCurrency_code": "UZS",
-  "exchangeRate": 1.0,
-  "totalAmountInGuestCurrency": 900000.00,
   "room_ID": "{{roomId}}",
   "status_code": "NEW"
 }
@@ -185,6 +181,21 @@ Content-Type: application/json
 {
   "status_code": "CONFIRMED"
 }
+
+### Try to overwrite a computed field: succeeds (200) but totalAmount is ignored
+# Check the response: totalAmount keeps its seed value, 1350000.00.
+PATCH {{base}}/Bookings({{bookingId}})
+Content-Type: application/json
+
+{
+  "totalAmount": 1
+}
+
+### Cancel a booking (bound action): expected to FAIL (501) until the Phase 3 handler exists
+POST {{base}}/Bookings({{createBooking.response.body.ID}})/BookingService.cancel
+Content-Type: application/json
+
+{}
 
 ### Delete the created booking
 DELETE {{base}}/Bookings({{createBooking.response.body.ID}})

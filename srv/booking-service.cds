@@ -6,3 +6,12 @@ service BookingService {
     entity Bookings as projection on db.Bookings;
     @readonly entity BookingStatus as projection on db.BookingStatus;
 }
+
+annotate BookingService.Bookings with {
+    bookingNo                  @readonly;
+    nights                     @readonly;
+    totalAmount                @readonly;
+    currency                   @readonly;
+    exchangeRate               @readonly;
+    totalAmountInGuestCurrency @readonly;
+}
