@@ -349,6 +349,55 @@ Content-Type: application/json
 
 
 ######################################################################
+# Exchange rates (srv/exchange-rates.js, Central Bank of Uzbekistan API)
+# Room 101 is in a UZS hotel: 450000.00 UZS per night.
+######################################################################
+
+### Book in UZS, pay in EUR: exchangeRate and totalAmountInGuestCurrency are filled
+# @name foreignCurrency
+POST {{base}}/Bookings
+Content-Type: application/json
+
+{
+  "guestName": "Test Guest",
+  "checkInDate": "2026-12-10",
+  "checkOutDate": "2026-12-12",
+  "guestCount": 1,
+  "guestCurrency_code": "EUR",
+  "room_ID": "{{roomId}}"
+}
+
+### Switch the guest currency to USD: the conversion is recalculated
+PATCH {{base}}/Bookings({{foreignCurrency.response.body.ID}})
+Content-Type: application/json
+
+{
+  "guestCurrency_code": "USD"
+}
+
+### Currency the API doesn't know: still succeeds (201), without the conversion
+# The warning is in the "sap-messages" response header.
+# @name unknownCurrency
+POST {{base}}/Bookings
+Content-Type: application/json
+
+{
+  "guestName": "Test Guest",
+  "checkInDate": "2026-12-20",
+  "checkOutDate": "2026-12-22",
+  "guestCount": 1,
+  "guestCurrency_code": "XYZ",
+  "room_ID": "{{roomId}}"
+}
+
+### Delete the foreign-currency booking
+DELETE {{base}}/Bookings({{foreignCurrency.response.body.ID}})
+
+### Delete the unknown-currency booking
+DELETE {{base}}/Bookings({{unknownCurrency.response.body.ID}})
+
+
+######################################################################
 # BookingStatus (read-only)
 ######################################################################
 

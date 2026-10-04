@@ -1,4 +1,5 @@
 import cds from '@sap/cds'
+import { getExchangeRate } from './exchange-rates.js'
 
 const DAY = 24 * 60 * 60 * 1000
 const today = () => new Date().toISOString().slice(0, 10)
@@ -56,7 +57,7 @@ export default class BookingService extends cds.ApplicationService {
 
     // 2. Computation: nights, price, currency, booking number, default status
     this.before(['CREATE', 'UPDATE'], Bookings, async req => {
-      if (!changes(req, 'checkInDate', 'checkOutDate', 'room_ID')) return
+      if (!changes(req, 'checkInDate', 'checkOutDate', 'room_ID', 'guestCurrency_code')) return
 
       const booking = await bookingAfterChange(req)
       if (!booking?.room_ID) return
@@ -76,10 +77,17 @@ export default class BookingService extends cds.ApplicationService {
         req.data.guestCurrency_code ??= room.currency_code
       }
 
-      const guestCurrency = req.data.guestCurrency_code ?? booking.guestCurrency_code
-      if (guestCurrency === room.currency_code) {
-        req.data.exchangeRate = 1
-        req.data.totalAmountInGuestCurrency = req.data.totalAmount
+      // 3. External API: convert the total into the guest's currency
+      const guestCurrency = req.data.guestCurrency_code ?? booking.guestCurrency_code ?? room.currency_code
+      try {
+        const rate = await getExchangeRate(room.currency_code, guestCurrency)
+        req.data.exchangeRate = Math.round(rate * 1e8) / 1e8
+        req.data.totalAmountInGuestCurrency = Math.round(req.data.totalAmount * rate * 100) / 100
+      } catch (error) {
+        // Don't block the booking: save it without the conversion and tell the user
+        req.data.exchangeRate = null
+        req.data.totalAmountInGuestCurrency = null
+        req.warn(`Total in ${guestCurrency} is not available: ${error.message}`)
       }
     })
 
