@@ -14,7 +14,6 @@ sap.ui.define([
 
 
         opaTest("Navigate to ObjectPage", function (Given, When, Then) {
-            // Note: this test will fail if the ListReport page doesn't show any data
             
             When.onTheBookingsList.onFilterBar().iExecuteSearch();
             
