@@ -8,24 +8,25 @@ export default class BookingService extends cds.ApplicationService {
   init() {
     const { Bookings, Rooms } = this.entities
 
-    const bookingAfterChange = async req => {
-      if (req.event === 'CREATE') return req.data
-      const stored = await SELECT.one.from(req.subject)
-      return stored && { ...stored, ...req.data }
+    // A PATCH sends only the changed fields, Fiori's Save sends the whole booking.
+    // Either way, merge over the stored booking and compare with it to see what really changed.
+    const loadChange = async req => {
+      const stored = req.event === 'UPDATE' ? await SELECT.one.from(req.subject) : null
+      const booking = req.event === 'CREATE' ? req.data : stored && { ...stored, ...req.data }
+      const changes = (...fields) => !stored || fields.some(f => f in req.data && req.data[f] !== stored[f])
+      return { booking, changes }
     }
-
-    const changes = (req, ...fields) => req.event === 'CREATE' || fields.some(f => f in req.data)
 
 
     // 1. Validation: dates, capacity, no double-booking
     this.before(['CREATE', 'UPDATE'], Bookings, async req => {
-      const booking = await bookingAfterChange(req)
+      const { booking, changes } = await loadChange(req)
       if (!booking?.room_ID) return // missing fields are reported by @mandatory
 
       const { ID, room_ID, checkInDate, checkOutDate, guestCount, status_code } = booking
 
       // Only check dates when they change, so old bookings can still be updated
-      if (changes(req, 'checkInDate', 'checkOutDate')) {
+      if (changes('checkInDate', 'checkOutDate')) {
         if (checkInDate < today())
           req.error(400, 'Check-in date cannot be in the past', 'checkInDate')
         if (checkOutDate <= checkInDate)
@@ -35,12 +36,12 @@ export default class BookingService extends cds.ApplicationService {
       const room = await SELECT.one.from(Rooms, room_ID).columns('number', 'capacity')
       if (!room) return // unknown room is reported by @assert.target
 
-      if (changes(req, 'guestCount', 'room_ID') && guestCount > room.capacity)
+      if (changes('guestCount', 'room_ID') && guestCount > room.capacity)
         req.error(400, `Room ${room.number} fits at most ${room.capacity} guest${room.capacity === 1 ? '' : 's'}`, 'guestCount')
 
       if (req.errors) return
       if (status_code === 'CANCELLED') return
-      if (!changes(req, 'checkInDate', 'checkOutDate', 'room_ID', 'status_code')) return
+      if (!changes('checkInDate', 'checkOutDate', 'room_ID', 'status_code')) return
 
       // Two stays overlap when each one starts before the other ends.
       // Cancelled bookings don't block the room; the booking itself is excluded on UPDATE.
@@ -57,10 +58,9 @@ export default class BookingService extends cds.ApplicationService {
 
     // 2. Computation: nights, price, currency, booking number, default status
     this.before(['CREATE', 'UPDATE'], Bookings, async req => {
-      if (!changes(req, 'checkInDate', 'checkOutDate', 'room_ID', 'guestCurrency_code')) return
-
-      const booking = await bookingAfterChange(req)
+      const { booking, changes } = await loadChange(req)
       if (!booking?.room_ID) return
+      if (!changes('checkInDate', 'checkOutDate', 'room_ID', 'guestCurrency_code')) return
 
       const room = await SELECT.one.from(Rooms, booking.room_ID)
         .columns('pricePerNight', 'hotel.currency_code as currency_code')

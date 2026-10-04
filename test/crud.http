@@ -135,6 +135,9 @@ DELETE {{base}}/Rooms({{createRoom.response.body.ID}})
 
 ######################################################################
 # Bookings
+# Bookings are draft-enabled for Fiori. A plain POST would only create a
+# draft (no handlers run until it's activated), so the API requests send
+# "IsActiveEntity": true to create the booking directly.
 ######################################################################
 
 ### Read all bookings with room and status
@@ -161,6 +164,7 @@ POST {{base}}/Bookings
 Content-Type: application/json
 
 {
+  "IsActiveEntity": true,
   "guestName": "Test Guest",
   "guestEmail": "test.guest@example.com",
   "checkInDate": "2026-12-01",
@@ -211,6 +215,7 @@ POST {{base}}/Bookings
 Content-Type: application/json
 
 {
+  "IsActiveEntity": true,
   "guestName": "Test Guest"
 }
 
@@ -219,6 +224,7 @@ POST {{base}}/Bookings
 Content-Type: application/json
 
 {
+  "IsActiveEntity": true,
   "guestName": "Test Guest",
   "checkInDate": "2026-12-01",
   "checkOutDate": "2026-12-03",
@@ -248,6 +254,7 @@ POST {{base}}/Bookings
 Content-Type: application/json
 
 {
+  "IsActiveEntity": true,
   "guestName": "Test Guest",
   "checkInDate": "2026-01-10",
   "checkOutDate": "2026-01-12",
@@ -260,6 +267,7 @@ POST {{base}}/Bookings
 Content-Type: application/json
 
 {
+  "IsActiveEntity": true,
   "guestName": "Test Guest",
   "checkInDate": "2026-12-10",
   "checkOutDate": "2026-12-08",
@@ -272,6 +280,7 @@ POST {{base}}/Bookings
 Content-Type: application/json
 
 {
+  "IsActiveEntity": true,
   "guestName": "Test Guest",
   "checkInDate": "2026-12-10",
   "checkOutDate": "2026-12-10",
@@ -284,6 +293,7 @@ POST {{base}}/Bookings
 Content-Type: application/json
 
 {
+  "IsActiveEntity": true,
   "guestName": "Test Guest",
   "checkInDate": "2026-12-10",
   "checkOutDate": "2026-12-12",
@@ -296,6 +306,7 @@ POST {{base}}/Bookings
 Content-Type: application/json
 
 {
+  "IsActiveEntity": true,
   "guestName": "Test Guest",
   "checkInDate": "2026-01-10",
   "checkOutDate": "2026-01-08",
@@ -308,6 +319,7 @@ POST {{base}}/Bookings
 Content-Type: application/json
 
 {
+  "IsActiveEntity": true,
   "guestName": "Test Guest",
   "checkInDate": "2026-10-11",
   "checkOutDate": "2026-10-13",
@@ -321,6 +333,7 @@ POST {{base}}/Bookings
 Content-Type: application/json
 
 {
+  "IsActiveEntity": true,
   "guestName": "Test Guest",
   "checkInDate": "2026-10-12",
   "checkOutDate": "2026-10-14",
@@ -359,6 +372,7 @@ POST {{base}}/Bookings
 Content-Type: application/json
 
 {
+  "IsActiveEntity": true,
   "guestName": "Test Guest",
   "checkInDate": "2026-12-10",
   "checkOutDate": "2026-12-12",
@@ -382,6 +396,7 @@ POST {{base}}/Bookings
 Content-Type: application/json
 
 {
+  "IsActiveEntity": true,
   "guestName": "Test Guest",
   "checkInDate": "2026-12-20",
   "checkOutDate": "2026-12-22",
