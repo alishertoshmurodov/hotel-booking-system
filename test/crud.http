@@ -1,0 +1,211 @@
+# CRUD smoke tests for BookingService (VS Code "REST Client" extension).
+# Start the server with `npx cds watch` first. Run the requests in each
+# section top to bottom: later requests reuse IDs from the "create" responses.
+# The database is in-memory, so a restart resets everything to the CSV data.
+
+@base = http://localhost:4004/odata/v4/booking
+
+# Seed IDs from db/data
+@hotelId = a0b8e4c7-9194-47cf-9f25-2e07ee0e645f
+@roomId = 20000000-0000-4000-8000-000000000001
+@bookingId = 30000000-0000-4000-8000-000000000001
+
+
+######################################################################
+# Service metadata
+######################################################################
+
+### Service document (lists the entity sets)
+GET {{base}}/
+
+### $metadata (entity types, keys, associations)
+GET {{base}}/$metadata
+
+
+######################################################################
+# Hotels
+######################################################################
+
+### Read all hotels
+GET {{base}}/Hotels
+
+### Read active hotels only, sorted by stars
+GET {{base}}/Hotels?$filter=isActive eq true&$orderby=stars desc
+
+### Read one hotel with its rooms
+GET {{base}}/Hotels({{hotelId}})?$expand=rooms
+
+### Navigate from a hotel to its rooms
+GET {{base}}/Hotels({{hotelId}})/rooms
+
+### Create a hotel
+# @name createHotel
+POST {{base}}/Hotels
+Content-Type: application/json
+
+{
+  "name": "Test Hotel",
+  "city": "Bukhara",
+  "country": "Uzbekistan",
+  "currency_code": "UZS",
+  "stars": 3,
+  "isActive": true
+}
+
+### Read the created hotel
+GET {{base}}/Hotels({{createHotel.response.body.ID}})
+
+### Update the created hotel (PATCH changes only the fields sent)
+PATCH {{base}}/Hotels({{createHotel.response.body.ID}})
+Content-Type: application/json
+
+{
+  "stars": 4,
+  "isActive": false
+}
+
+### Delete the created hotel
+DELETE {{base}}/Hotels({{createHotel.response.body.ID}})
+
+### Deep insert: create a hotel together with its rooms (composition)
+# @name createHotelDeep
+POST {{base}}/Hotels
+Content-Type: application/json
+
+{
+  "name": "Deep Insert Hotel",
+  "city": "Khiva",
+  "country": "Uzbekistan",
+  "currency_code": "UZS",
+  "stars": 4,
+  "isActive": true,
+  "rooms": [
+    { "number": "1", "type": "Single", "capacity": 1, "pricePerNight": 300000.00 },
+    { "number": "2", "type": "Double", "capacity": 2, "pricePerNight": 450000.00 }
+  ]
+}
+
+### Read the deep-inserted hotel with its rooms
+GET {{base}}/Hotels({{createHotelDeep.response.body.ID}})?$expand=rooms
+
+### Delete the deep-inserted hotel (its rooms are deleted too)
+DELETE {{base}}/Hotels({{createHotelDeep.response.body.ID}})
+
+
+######################################################################
+# Rooms
+######################################################################
+
+### Read all rooms with their hotel
+GET {{base}}/Rooms?$expand=hotel($select=name)
+
+### Read suites with capacity of at least 4
+GET {{base}}/Rooms?$filter=type eq 'Suite' and capacity ge 4
+
+### Read one room with its bookings
+GET {{base}}/Rooms({{roomId}})?$expand=bookings
+
+### Create a room in an existing hotel
+# @name createRoom
+POST {{base}}/Rooms
+Content-Type: application/json
+
+{
+  "number": "999",
+  "type": "Double",
+  "capacity": 2,
+  "pricePerNight": 500000.00,
+  "hotel_ID": "{{hotelId}}"
+}
+
+### Read the created room
+GET {{base}}/Rooms({{createRoom.response.body.ID}})?$expand=hotel
+
+### Update the created room
+PATCH {{base}}/Rooms({{createRoom.response.body.ID}})
+Content-Type: application/json
+
+{
+  "pricePerNight": 550000.00
+}
+
+### Delete the created room
+DELETE {{base}}/Rooms({{createRoom.response.body.ID}})
+
+
+######################################################################
+# Bookings
+######################################################################
+
+### Read all bookings with room and status
+GET {{base}}/Bookings?$expand=room($select=number),status
+
+### Read bookings by status
+GET {{base}}/Bookings?$filter=status_code eq 'NEW'
+
+### Read bookings checking in during October 2026
+GET {{base}}/Bookings?$filter=checkInDate ge 2026-10-01 and checkInDate le 2026-10-31&$orderby=checkInDate
+
+### Read one booking
+GET {{base}}/Bookings({{bookingId}})?$expand=room,status
+
+### Count bookings
+GET {{base}}/Bookings/$count
+
+### Create a booking
+# No handlers yet, so nights, totalAmount and bookingNo are sent by hand.
+# @name createBooking
+POST {{base}}/Bookings
+Content-Type: application/json
+
+{
+  "bookingNo": "BK-2026-9999",
+  "guestName": "Test Guest",
+  "guestEmail": "test.guest@example.com",
+  "checkInDate": "2026-12-01",
+  "checkOutDate": "2026-12-03",
+  "guestCount": 1,
+  "nights": 2,
+  "totalAmount": 900000.00,
+  "currency_code": "UZS",
+  "guestCurrency_code": "UZS",
+  "exchangeRate": 1.0,
+  "totalAmountInGuestCurrency": 900000.00,
+  "room_ID": "{{roomId}}",
+  "status_code": "NEW"
+}
+
+### Read the created booking
+GET {{base}}/Bookings({{createBooking.response.body.ID}})?$expand=status
+
+### Update the created booking's status
+PATCH {{base}}/Bookings({{createBooking.response.body.ID}})
+Content-Type: application/json
+
+{
+  "status_code": "CONFIRMED"
+}
+
+### Delete the created booking
+DELETE {{base}}/Bookings({{createBooking.response.body.ID}})
+
+
+######################################################################
+# BookingStatus (read-only)
+######################################################################
+
+### Read all statuses
+GET {{base}}/BookingStatus
+
+### Read one status
+GET {{base}}/BookingStatus('NEW')
+
+### Create a status: expected to FAIL (405), the entity is @readonly
+POST {{base}}/BookingStatus
+Content-Type: application/json
+
+{
+  "code": "TEST",
+  "name": "Test",
+  "criticality": 0
+}
