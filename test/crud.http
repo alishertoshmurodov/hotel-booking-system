@@ -5,6 +5,13 @@
 
 @base = http://localhost:4004/odata/v4/booking
 
+# Mocked users from package.json (user:password). REST Client encodes
+# "Basic user:password" itself. Requests run as admin unless they say otherwise.
+@admin = admin:admin
+@manager = manager:manager
+@alice = alice:alice
+@bob = bob:bob
+
 # Seed IDs from db/data
 @hotelId = a0b8e4c7-9194-47cf-9f25-2e07ee0e645f
 @roomId = 20000000-0000-4000-8000-000000000001
@@ -17,9 +24,11 @@
 
 ### Service document (lists the entity sets)
 GET {{base}}/
+Authorization: Basic {{admin}}
 
 ### $metadata (entity types, keys, associations)
 GET {{base}}/$metadata
+Authorization: Basic {{admin}}
 
 
 ######################################################################
@@ -28,19 +37,24 @@ GET {{base}}/$metadata
 
 ### Read all hotels
 GET {{base}}/Hotels
+Authorization: Basic {{admin}}
 
 ### Read active hotels only, sorted by stars
 GET {{base}}/Hotels?$filter=isActive eq true&$orderby=stars desc
+Authorization: Basic {{admin}}
 
 ### Read one hotel with its rooms
 GET {{base}}/Hotels({{hotelId}})?$expand=rooms
+Authorization: Basic {{admin}}
 
 ### Navigate from a hotel to its rooms
 GET {{base}}/Hotels({{hotelId}})/rooms
+Authorization: Basic {{admin}}
 
 ### Create a hotel
 # @name createHotel
 POST {{base}}/Hotels
+Authorization: Basic {{admin}}
 Content-Type: application/json
 
 {
@@ -54,9 +68,11 @@ Content-Type: application/json
 
 ### Read the created hotel
 GET {{base}}/Hotels({{createHotel.response.body.ID}})
+Authorization: Basic {{admin}}
 
 ### Update the created hotel (PATCH changes only the fields sent)
 PATCH {{base}}/Hotels({{createHotel.response.body.ID}})
+Authorization: Basic {{admin}}
 Content-Type: application/json
 
 {
@@ -66,10 +82,12 @@ Content-Type: application/json
 
 ### Delete the created hotel
 DELETE {{base}}/Hotels({{createHotel.response.body.ID}})
+Authorization: Basic {{admin}}
 
 ### Deep insert: create a hotel together with its rooms (composition)
 # @name createHotelDeep
 POST {{base}}/Hotels
+Authorization: Basic {{admin}}
 Content-Type: application/json
 
 {
@@ -87,9 +105,11 @@ Content-Type: application/json
 
 ### Read the deep-inserted hotel with its rooms
 GET {{base}}/Hotels({{createHotelDeep.response.body.ID}})?$expand=rooms
+Authorization: Basic {{admin}}
 
 ### Delete the deep-inserted hotel (its rooms are deleted too)
 DELETE {{base}}/Hotels({{createHotelDeep.response.body.ID}})
+Authorization: Basic {{admin}}
 
 
 ######################################################################
@@ -98,16 +118,20 @@ DELETE {{base}}/Hotels({{createHotelDeep.response.body.ID}})
 
 ### Read all rooms with their hotel
 GET {{base}}/Rooms?$expand=hotel($select=name)
+Authorization: Basic {{admin}}
 
 ### Read suites with capacity of at least 4
 GET {{base}}/Rooms?$filter=type eq 'Suite' and capacity ge 4
+Authorization: Basic {{admin}}
 
 ### Read one room with its bookings
 GET {{base}}/Rooms({{roomId}})?$expand=bookings
+Authorization: Basic {{admin}}
 
 ### Create a room in an existing hotel
 # @name createRoom
 POST {{base}}/Rooms
+Authorization: Basic {{admin}}
 Content-Type: application/json
 
 {
@@ -120,9 +144,11 @@ Content-Type: application/json
 
 ### Read the created room
 GET {{base}}/Rooms({{createRoom.response.body.ID}})?$expand=hotel
+Authorization: Basic {{admin}}
 
 ### Update the created room
 PATCH {{base}}/Rooms({{createRoom.response.body.ID}})
+Authorization: Basic {{admin}}
 Content-Type: application/json
 
 {
@@ -131,6 +157,7 @@ Content-Type: application/json
 
 ### Delete the created room
 DELETE {{base}}/Rooms({{createRoom.response.body.ID}})
+Authorization: Basic {{admin}}
 
 
 ######################################################################
@@ -142,18 +169,23 @@ DELETE {{base}}/Rooms({{createRoom.response.body.ID}})
 
 ### Read all bookings with room and status
 GET {{base}}/Bookings?$expand=room($select=number),status
+Authorization: Basic {{admin}}
 
 ### Read bookings by status
 GET {{base}}/Bookings?$filter=status_code eq 'NEW'
+Authorization: Basic {{admin}}
 
 ### Read bookings checking in during October 2026
 GET {{base}}/Bookings?$filter=checkInDate ge 2026-10-01 and checkInDate le 2026-10-31&$orderby=checkInDate
+Authorization: Basic {{admin}}
 
 ### Read one booking
 GET {{base}}/Bookings({{bookingId}})?$expand=room,status
+Authorization: Basic {{admin}}
 
 ### Count bookings
 GET {{base}}/Bookings/$count
+Authorization: Basic {{admin}}
 
 ### Create a booking
 # bookingNo, nights, totalAmount, currency and the exchange fields are
@@ -161,6 +193,7 @@ GET {{base}}/Bookings/$count
 # totalAmount = 900000.00, bookingNo = BK-2026-0013, status_code = NEW.
 # @name createBooking
 POST {{base}}/Bookings
+Authorization: Basic {{admin}}
 Content-Type: application/json
 
 {
@@ -176,9 +209,11 @@ Content-Type: application/json
 
 ### Read the created booking
 GET {{base}}/Bookings({{createBooking.response.body.ID}})?$expand=status
+Authorization: Basic {{admin}}
 
 ### Update the created booking's status
 PATCH {{base}}/Bookings({{createBooking.response.body.ID}})
+Authorization: Basic {{admin}}
 Content-Type: application/json
 
 {
@@ -188,6 +223,7 @@ Content-Type: application/json
 ### Try to overwrite a computed field: succeeds (200) but totalAmount is ignored
 # Check the response: totalAmount keeps its seed value, 1350000.00.
 PATCH {{base}}/Bookings({{bookingId}})
+Authorization: Basic {{admin}}
 Content-Type: application/json
 
 {
@@ -196,6 +232,7 @@ Content-Type: application/json
 
 ### Change the dates: nights and totalAmount are recalculated (3 nights, 1350000.00)
 PATCH {{base}}/Bookings({{createBooking.response.body.ID}})
+Authorization: Basic {{admin}}
 Content-Type: application/json
 
 {
@@ -204,6 +241,7 @@ Content-Type: application/json
 
 ### Delete the created booking
 DELETE {{base}}/Bookings({{createBooking.response.body.ID}})
+Authorization: Basic {{admin}}
 
 
 ######################################################################
@@ -212,6 +250,7 @@ DELETE {{base}}/Bookings({{createBooking.response.body.ID}})
 
 ### Create a booking without required fields: expected to FAIL (ASSERT_MANDATORY)
 POST {{base}}/Bookings
+Authorization: Basic {{admin}}
 Content-Type: application/json
 
 {
@@ -221,6 +260,7 @@ Content-Type: application/json
 
 ### Create a booking for a room that doesn't exist: expected to FAIL (ASSERT_TARGET)
 POST {{base}}/Bookings
+Authorization: Basic {{admin}}
 Content-Type: application/json
 
 {
@@ -235,6 +275,7 @@ Content-Type: application/json
 
 ### Set a status code that doesn't exist: expected to FAIL (ASSERT_TARGET)
 PATCH {{base}}/Bookings({{bookingId}})
+Authorization: Basic {{admin}}
 Content-Type: application/json
 
 {
@@ -251,6 +292,7 @@ Content-Type: application/json
 
 ### Check-in in the past: expected to FAIL (checkInDate)
 POST {{base}}/Bookings
+Authorization: Basic {{admin}}
 Content-Type: application/json
 
 {
@@ -264,6 +306,7 @@ Content-Type: application/json
 
 ### Check-out before check-in: expected to FAIL (checkOutDate)
 POST {{base}}/Bookings
+Authorization: Basic {{admin}}
 Content-Type: application/json
 
 {
@@ -277,6 +320,7 @@ Content-Type: application/json
 
 ### Check-out on the check-in day (0 nights): expected to FAIL (checkOutDate)
 POST {{base}}/Bookings
+Authorization: Basic {{admin}}
 Content-Type: application/json
 
 {
@@ -290,6 +334,7 @@ Content-Type: application/json
 
 ### More guests than the room fits (Single, capacity 1): expected to FAIL (guestCount)
 POST {{base}}/Bookings
+Authorization: Basic {{admin}}
 Content-Type: application/json
 
 {
@@ -303,6 +348,7 @@ Content-Type: application/json
 
 ### Several rule violations at once: expected to FAIL with all errors listed
 POST {{base}}/Bookings
+Authorization: Basic {{admin}}
 Content-Type: application/json
 
 {
@@ -316,6 +362,7 @@ Content-Type: application/json
 
 ### Overlaps BK-2026-0002 (10-12 Oct): expected to FAIL (checkInDate)
 POST {{base}}/Bookings
+Authorization: Basic {{admin}}
 Content-Type: application/json
 
 {
@@ -330,6 +377,7 @@ Content-Type: application/json
 ### Starts on BK-2026-0002's check-out day: succeeds (back-to-back is not an overlap)
 # @name backToBack
 POST {{base}}/Bookings
+Authorization: Basic {{admin}}
 Content-Type: application/json
 
 {
@@ -343,6 +391,7 @@ Content-Type: application/json
 
 ### Move that booking into BK-2026-0002's dates: expected to FAIL (checkInDate)
 PATCH {{base}}/Bookings({{backToBack.response.body.ID}})
+Authorization: Basic {{admin}}
 Content-Type: application/json
 
 {
@@ -351,9 +400,11 @@ Content-Type: application/json
 
 ### Delete the back-to-back booking
 DELETE {{base}}/Bookings({{backToBack.response.body.ID}})
+Authorization: Basic {{admin}}
 
 ### Update a past booking (BK-2026-0005, Sept): succeeds, dates are unchanged so not re-checked
 PATCH {{base}}/Bookings(30000000-0000-4000-8000-000000000005)
+Authorization: Basic {{admin}}
 Content-Type: application/json
 
 {
@@ -369,6 +420,7 @@ Content-Type: application/json
 ### Book in UZS, pay in EUR: exchangeRate and totalAmountInGuestCurrency are filled
 # @name foreignCurrency
 POST {{base}}/Bookings
+Authorization: Basic {{admin}}
 Content-Type: application/json
 
 {
@@ -383,6 +435,7 @@ Content-Type: application/json
 
 ### Switch the guest currency to USD: the conversion is recalculated
 PATCH {{base}}/Bookings({{foreignCurrency.response.body.ID}})
+Authorization: Basic {{admin}}
 Content-Type: application/json
 
 {
@@ -393,6 +446,7 @@ Content-Type: application/json
 # The warning is in the "sap-messages" response header.
 # @name unknownCurrency
 POST {{base}}/Bookings
+Authorization: Basic {{admin}}
 Content-Type: application/json
 
 {
@@ -407,9 +461,11 @@ Content-Type: application/json
 
 ### Delete the foreign-currency booking
 DELETE {{base}}/Bookings({{foreignCurrency.response.body.ID}})
+Authorization: Basic {{admin}}
 
 ### Delete the unknown-currency booking
 DELETE {{base}}/Bookings({{unknownCurrency.response.body.ID}})
+Authorization: Basic {{admin}}
 
 
 ######################################################################
@@ -418,12 +474,15 @@ DELETE {{base}}/Bookings({{unknownCurrency.response.body.ID}})
 
 ### Read all statuses
 GET {{base}}/BookingStatus
+Authorization: Basic {{admin}}
 
 ### Read one status
 GET {{base}}/BookingStatus('NEW')
+Authorization: Basic {{admin}}
 
 ### Create a status: expected to FAIL (405), the entity is @readonly
 POST {{base}}/BookingStatus
+Authorization: Basic {{admin}}
 Content-Type: application/json
 
 {
@@ -431,3 +490,98 @@ Content-Type: application/json
   "name": "Test",
   "criticality": 0
 }
+
+
+######################################################################
+# Roles (srv/access-control.cds)
+# alice owns BK-2026-0001..0003, bob owns BK-2026-0004..0006.
+######################################################################
+
+@bobsBookingId = 30000000-0000-4000-8000-000000000004
+
+### No login: expected to FAIL (401)
+GET {{base}}/Bookings
+
+### alice (Customer) sees only her own bookings: BK-2026-0001, 0002, 0003
+GET {{base}}/Bookings?$select=bookingNo,guestName
+Authorization: Basic {{alice}}
+
+### alice reads bob's booking: expected to FAIL (404, it's filtered out for her)
+GET {{base}}/Bookings({{bobsBookingId}})
+Authorization: Basic {{alice}}
+
+### alice creates a booking: createdBy = alice
+# @name aliceBooking
+POST {{base}}/Bookings
+Authorization: Basic {{alice}}
+Content-Type: application/json
+
+{
+  "IsActiveEntity": true,
+  "guestName": "Alice",
+  "checkInDate": "2026-12-15",
+  "checkOutDate": "2026-12-17",
+  "guestCount": 1,
+  "room_ID": "{{roomId}}"
+}
+
+### bob reads alice's new booking: expected to FAIL (404)
+GET {{base}}/Bookings({{aliceBooking.response.body.ID}})
+Authorization: Basic {{bob}}
+
+### alice changes her booking: expected to FAIL (403, customers can't update)
+PATCH {{base}}/Bookings({{aliceBooking.response.body.ID}})
+Authorization: Basic {{alice}}
+Content-Type: application/json
+
+{
+  "guestCount": 1
+}
+
+### alice deletes her booking: expected to FAIL (403)
+DELETE {{base}}/Bookings({{aliceBooking.response.body.ID}})
+Authorization: Basic {{alice}}
+
+### alice creates a hotel: expected to FAIL (403, only Admin)
+POST {{base}}/Hotels
+Authorization: Basic {{alice}}
+Content-Type: application/json
+
+{
+  "name": "Alice's Hotel"
+}
+
+### manager sees all bookings
+GET {{base}}/Bookings/$count
+Authorization: Basic {{manager}}
+
+### manager confirms alice's booking
+PATCH {{base}}/Bookings({{aliceBooking.response.body.ID}})
+Authorization: Basic {{manager}}
+Content-Type: application/json
+
+{
+  "status_code": "CONFIRMED"
+}
+
+### manager deletes a booking: expected to FAIL (403, no delete for Manager)
+DELETE {{base}}/Bookings({{aliceBooking.response.body.ID}})
+Authorization: Basic {{manager}}
+
+### manager creates a booking: expected to FAIL (403)
+POST {{base}}/Bookings
+Authorization: Basic {{manager}}
+Content-Type: application/json
+
+{
+  "IsActiveEntity": true,
+  "guestName": "Manager",
+  "checkInDate": "2026-12-15",
+  "checkOutDate": "2026-12-17",
+  "guestCount": 1,
+  "room_ID": "{{roomId}}"
+}
+
+### admin deletes alice's booking
+DELETE {{base}}/Bookings({{aliceBooking.response.body.ID}})
+Authorization: Basic {{admin}}
