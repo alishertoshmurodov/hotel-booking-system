@@ -1,6 +1,6 @@
 ID	name	city	country	currency_code	stars	isActive
-a0b8e4c7-9194-47cf-9f25-2e07ee0e645f	Silk Road Grand Hotel	Tashkent	Uzbekistan	UZS	5	True
-e566841e-5f2a-484a-a808-f1f0163c84de	Registan Plaza	Samarkand	Uzbekistan	UZS	4	True
-772183fd-fb5a-44ac-88e1-85cf390ec14a	Bosphorus View Hotel	Istanbul	Turkey	TRY	5	True
-95cfaf7b-7215-4cb1-a865-784484928cba	Berlin Central Stay	Berlin	Germany	EUR	3	True
-2c86a569-3e39-4f91-9988-658970a8ea6c	Mountain Breeze Resort	Chimgan	Uzbekistan	UZS	4	False
+a0b8e4c7-9194-47cf-9f25-2e07ee0e645f	Silk Road Grand Hotel	Tashkent	Uzbekistan	UZS	5	true
+e566841e-5f2a-484a-a808-f1f0163c84de	Registan Plaza	Samarkand	Uzbekistan	UZS	4	true
+772183fd-fb5a-44ac-88e1-85cf390ec14a	Bosphorus View Hotel	Istanbul	Turkey	TRY	5	true
+95cfaf7b-7215-4cb1-a865-784484928cba	Berlin Central Stay	Berlin	Germany	EUR	3	true
+2c86a569-3e39-4f91-9988-658970a8ea6c	Mountain Breeze Resort	Chimgan	Uzbekistan	UZS	4	false
