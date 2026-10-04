@@ -1,0 +1,96 @@
+import cds from '@sap/cds'
+
+const DAY = 24 * 60 * 60 * 1000
+const today = () => new Date().toISOString().slice(0, 10)
+
+export default class BookingService extends cds.ApplicationService {
+  init() {
+    const { Bookings, Rooms } = this.entities
+
+    const bookingAfterChange = async req => {
+      if (req.event === 'CREATE') return req.data
+      const stored = await SELECT.one.from(req.subject)
+      return stored && { ...stored, ...req.data }
+    }
+
+    const changes = (req, ...fields) => req.event === 'CREATE' || fields.some(f => f in req.data)
+
+
+    // 1. Validation: dates, capacity, no double-booking
+    this.before(['CREATE', 'UPDATE'], Bookings, async req => {
+      const booking = await bookingAfterChange(req)
+      if (!booking?.room_ID) return // missing fields are reported by @mandatory
+
+      const { ID, room_ID, checkInDate, checkOutDate, guestCount, status_code } = booking
+
+      // Only check dates when they change, so old bookings can still be updated
+      if (changes(req, 'checkInDate', 'checkOutDate')) {
+        if (checkInDate < today())
+          req.error(400, 'Check-in date cannot be in the past', 'checkInDate')
+        if (checkOutDate <= checkInDate)
+          req.error(400, 'Check-out date must be after the check-in date', 'checkOutDate')
+      }
+
+      const room = await SELECT.one.from(Rooms, room_ID).columns('number', 'capacity')
+      if (!room) return // unknown room is reported by @assert.target
+
+      if (changes(req, 'guestCount', 'room_ID') && guestCount > room.capacity)
+        req.error(400, `Room ${room.number} fits at most ${room.capacity} guest${room.capacity === 1 ? '' : 's'}`, 'guestCount')
+
+      if (req.errors) return
+      if (status_code === 'CANCELLED') return
+      if (!changes(req, 'checkInDate', 'checkOutDate', 'room_ID', 'status_code')) return
+
+      // Two stays overlap when each one starts before the other ends.
+      // Cancelled bookings don't block the room; the booking itself is excluded on UPDATE.
+      const clash = await SELECT.one.from(Bookings)
+        .columns('bookingNo', 'checkInDate', 'checkOutDate')
+        .where `room_ID = ${room_ID}
+          and checkInDate < ${checkOutDate} and checkOutDate > ${checkInDate}
+          and (status_code is null or status_code != 'CANCELLED')
+          and ID != ${ID}`
+      if (clash)
+        req.error(400, `Room ${room.number} is already booked from ${clash.checkInDate} to ${clash.checkOutDate} (${clash.bookingNo})`, 'checkInDate')
+    })
+
+
+    // 2. Computation: nights, price, currency, booking number, default status
+    this.before(['CREATE', 'UPDATE'], Bookings, async req => {
+      if (!changes(req, 'checkInDate', 'checkOutDate', 'room_ID')) return
+
+      const booking = await bookingAfterChange(req)
+      if (!booking?.room_ID) return
+
+      const room = await SELECT.one.from(Rooms, booking.room_ID)
+        .columns('pricePerNight', 'hotel.currency_code as currency_code')
+      if (!room) return
+
+      const nights = Math.round((Date.parse(booking.checkOutDate) - Date.parse(booking.checkInDate)) / DAY)
+      req.data.nights = nights
+      req.data.totalAmount = Math.round(nights * room.pricePerNight * 100) / 100
+      req.data.currency_code = room.currency_code
+
+      if (req.event === 'CREATE') {
+        req.data.bookingNo = await nextBookingNo()
+        req.data.status_code ??= 'NEW'
+        req.data.guestCurrency_code ??= room.currency_code
+      }
+
+      const guestCurrency = req.data.guestCurrency_code ?? booking.guestCurrency_code
+      if (guestCurrency === room.currency_code) {
+        req.data.exchangeRate = 1
+        req.data.totalAmountInGuestCurrency = req.data.totalAmount
+      }
+    })
+
+    const nextBookingNo = async () => {
+      const prefix = `BK-${new Date().getFullYear()}-`
+      const last = await SELECT.one.from(Bookings).columns('max(bookingNo) as no')
+        .where({ bookingNo: { like: prefix + '%' } })
+      const seq = last?.no ? Number(last.no.slice(prefix.length)) + 1 : 1
+      return prefix + String(seq).padStart(4, '0')
+    }
+
+    return super.init()
+  }
+}

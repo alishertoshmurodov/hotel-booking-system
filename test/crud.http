@@ -154,8 +154,8 @@ GET {{base}}/Bookings/$count
 
 ### Create a booking
 # bookingNo, nights, totalAmount, currency and the exchange fields are
-# @readonly: the server computes them. Until the Phase 3 handlers exist,
-# they stay empty on new bookings.
+# @readonly: the server computes them. Check the response: nights = 2,
+# totalAmount = 900000.00, bookingNo = BK-2026-0013, status_code = NEW.
 # @name createBooking
 POST {{base}}/Bookings
 Content-Type: application/json
@@ -167,8 +167,7 @@ Content-Type: application/json
   "checkOutDate": "2026-12-03",
   "guestCount": 1,
   "guestCurrency_code": "UZS",
-  "room_ID": "{{roomId}}",
-  "status_code": "NEW"
+  "room_ID": "{{roomId}}"
 }
 
 ### Read the created booking
@@ -191,11 +190,13 @@ Content-Type: application/json
   "totalAmount": 1
 }
 
-### Cancel a booking (bound action): expected to FAIL (501) until the Phase 3 handler exists
-POST {{base}}/Bookings({{createBooking.response.body.ID}})/BookingService.cancel
+### Change the dates: nights and totalAmount are recalculated (3 nights, 1350000.00)
+PATCH {{base}}/Bookings({{createBooking.response.body.ID}})
 Content-Type: application/json
 
-{}
+{
+  "checkOutDate": "2026-12-04"
+}
 
 ### Delete the created booking
 DELETE {{base}}/Bookings({{createBooking.response.body.ID}})
@@ -232,6 +233,118 @@ Content-Type: application/json
 
 {
   "status_code": "BANANA"
+}
+
+
+######################################################################
+# Business rules (srv/booking-service.js)
+# Room 102 (...0002) is booked by BK-2026-0002 from 2026-10-10 to 2026-10-12.
+######################################################################
+
+@room102 = 20000000-0000-4000-8000-000000000002
+
+### Check-in in the past: expected to FAIL (checkInDate)
+POST {{base}}/Bookings
+Content-Type: application/json
+
+{
+  "guestName": "Test Guest",
+  "checkInDate": "2026-01-10",
+  "checkOutDate": "2026-01-12",
+  "guestCount": 1,
+  "room_ID": "{{roomId}}"
+}
+
+### Check-out before check-in: expected to FAIL (checkOutDate)
+POST {{base}}/Bookings
+Content-Type: application/json
+
+{
+  "guestName": "Test Guest",
+  "checkInDate": "2026-12-10",
+  "checkOutDate": "2026-12-08",
+  "guestCount": 1,
+  "room_ID": "{{roomId}}"
+}
+
+### Check-out on the check-in day (0 nights): expected to FAIL (checkOutDate)
+POST {{base}}/Bookings
+Content-Type: application/json
+
+{
+  "guestName": "Test Guest",
+  "checkInDate": "2026-12-10",
+  "checkOutDate": "2026-12-10",
+  "guestCount": 1,
+  "room_ID": "{{roomId}}"
+}
+
+### More guests than the room fits (Single, capacity 1): expected to FAIL (guestCount)
+POST {{base}}/Bookings
+Content-Type: application/json
+
+{
+  "guestName": "Test Guest",
+  "checkInDate": "2026-12-10",
+  "checkOutDate": "2026-12-12",
+  "guestCount": 3,
+  "room_ID": "{{roomId}}"
+}
+
+### Several rule violations at once: expected to FAIL with all errors listed
+POST {{base}}/Bookings
+Content-Type: application/json
+
+{
+  "guestName": "Test Guest",
+  "checkInDate": "2026-01-10",
+  "checkOutDate": "2026-01-08",
+  "guestCount": 3,
+  "room_ID": "{{roomId}}"
+}
+
+### Overlaps BK-2026-0002 (10-12 Oct): expected to FAIL (checkInDate)
+POST {{base}}/Bookings
+Content-Type: application/json
+
+{
+  "guestName": "Test Guest",
+  "checkInDate": "2026-10-11",
+  "checkOutDate": "2026-10-13",
+  "guestCount": 1,
+  "room_ID": "{{room102}}"
+}
+
+### Starts on BK-2026-0002's check-out day: succeeds (back-to-back is not an overlap)
+# @name backToBack
+POST {{base}}/Bookings
+Content-Type: application/json
+
+{
+  "guestName": "Test Guest",
+  "checkInDate": "2026-10-12",
+  "checkOutDate": "2026-10-14",
+  "guestCount": 1,
+  "room_ID": "{{room102}}"
+}
+
+### Move that booking into BK-2026-0002's dates: expected to FAIL (checkInDate)
+PATCH {{base}}/Bookings({{backToBack.response.body.ID}})
+Content-Type: application/json
+
+{
+  "checkInDate": "2026-10-11"
+}
+
+### Delete the back-to-back booking
+DELETE {{base}}/Bookings({{backToBack.response.body.ID}})
+
+### Update a past booking (BK-2026-0005, Sept): succeeds, dates are unchanged so not re-checked
+PATCH {{base}}/Bookings(30000000-0000-4000-8000-000000000005)
+Content-Type: application/json
+
+{
+  "guestEmail": "otabek.new@example.com"
 }
 
 
