@@ -285,7 +285,7 @@ Content-Type: application/json
 
 ######################################################################
 # Business rules (srv/booking-service.js)
-# Room 102 (...0002) is booked by BK-2026-0002 from 2026-10-10 to 2026-10-12.
+# Room 102 (...0002) is booked by BK-2026-0002 from 2026-12-10 to 2026-12-12.
 ######################################################################
 
 @room102 = 20000000-0000-4000-8000-000000000002
@@ -360,7 +360,7 @@ Content-Type: application/json
   "room_ID": "{{roomId}}"
 }
 
-### Overlaps BK-2026-0002 (10-12 Oct): expected to FAIL (checkInDate)
+### Overlaps BK-2026-0002 (10-12 Dec): expected to FAIL (checkInDate)
 POST {{base}}/Bookings
 Authorization: Basic {{admin}}
 Content-Type: application/json
@@ -368,8 +368,8 @@ Content-Type: application/json
 {
   "IsActiveEntity": true,
   "guestName": "Test Guest",
-  "checkInDate": "2026-10-11",
-  "checkOutDate": "2026-10-13",
+  "checkInDate": "2026-12-11",
+  "checkOutDate": "2026-12-13",
   "guestCount": 1,
   "room_ID": "{{room102}}"
 }
@@ -383,8 +383,8 @@ Content-Type: application/json
 {
   "IsActiveEntity": true,
   "guestName": "Test Guest",
-  "checkInDate": "2026-10-12",
-  "checkOutDate": "2026-10-14",
+  "checkInDate": "2026-12-12",
+  "checkOutDate": "2026-12-14",
   "guestCount": 1,
   "room_ID": "{{room102}}"
 }
@@ -395,7 +395,7 @@ Authorization: Basic {{admin}}
 Content-Type: application/json
 
 {
-  "checkInDate": "2026-10-11"
+  "checkInDate": "2026-12-11"
 }
 
 ### Delete the back-to-back booking
@@ -611,7 +611,7 @@ Content-Type: application/json
   "room_ID": "{{registanRoom11}}"
 }
 
-### alice books room 21 on 28-30 Oct: succeeds, BK-2026-0007 there is cancelled
+### alice books room 21 on 5-7 Dec: succeeds, BK-2026-0007 there is cancelled
 # @name cancelledSlot
 POST {{base}}/Bookings
 Authorization: Basic {{alice}}
@@ -620,8 +620,8 @@ Content-Type: application/json
 {
   "IsActiveEntity": true,
   "guestName": "Alice",
-  "checkInDate": "2026-10-28",
-  "checkOutDate": "2026-10-30",
+  "checkInDate": "2026-12-05",
+  "checkOutDate": "2026-12-07",
   "guestCount": 2,
   "room_ID": "{{registanRoom21}}"
 }
